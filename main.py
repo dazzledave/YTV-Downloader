@@ -417,6 +417,94 @@ class SettingsDialog(QDialog):
         self.main_app.theme_switch.setChecked(self.theme_switch.isChecked())
         # The parent's toggle_mode will handle the rest via the signal connection
 
+class GuidesDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("User Guides")
+        self.setFixedSize(550, 450)
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+        
+        # Scroll Area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(0, 0, 10, 0)
+        scroll_layout.setSpacing(15)
+        
+        self.titles = []
+        self.descs = []
+        
+        # Main Header
+        header = QLabel("How to Use YTV Downloader")
+        header.setStyleSheet("font-size: 18px; font-weight: bold; color: #FFD600;")
+        scroll_layout.addWidget(header)
+        
+        # Guide 1
+        t1 = QLabel("1. Downloading a Video or Audio")
+        d1 = QLabel(
+            "• Copy the URL of the YouTube video from your web browser.\n"
+            "• Paste the link into the URL input box at the top.\n"
+            "• Select the format (e.g., MP4 for Video, MP3/M4A for Audio).\n"
+            "• Click the 'Download' button.\n"
+            "• Track progress, speed, size, and remaining time in the download cards list below."
+        )
+        self.titles.append(t1)
+        self.descs.append(d1)
+        
+        # Guide 2
+        t2 = QLabel("2. Download Directory & Appearance")
+        d2 = QLabel(
+            "• Click 'Settings' in the top-left menu bar.\n"
+            "• Click 'Browse' to set the folder where downloads will be saved.\n"
+            "• Toggle the 'Dark Mode' checkbox to switch application themes."
+        )
+        self.titles.append(t2)
+        self.descs.append(d2)
+        
+        # Guide 3
+        t3 = QLabel("3. Common Questions & Troubleshooting")
+        d3 = QLabel(
+            "• **Status: Merging...**: High-resolution video downloads (1080p+) download video and audio separately, then merge them using FFmpeg. This takes a brief moment.\n"
+            "• **Status: Error**: Make sure your internet is active and that the video is not private, region-blocked, or age-restricted.\n"
+            "• **Cancel/Retry**: Use the control buttons on the right side of the download card to open the folder, retry a failed download, or remove it."
+        )
+        self.titles.append(t3)
+        self.descs.append(d3)
+        
+        for t, d in zip(self.titles, self.descs):
+            d.setWordWrap(True)
+            scroll_layout.addWidget(t)
+            scroll_layout.addWidget(d)
+            
+        scroll_layout.addStretch()
+        scroll.setWidget(scroll_content)
+        layout.addWidget(scroll)
+        
+        # Close Button
+        close_btn = QPushButton("Done")
+        close_btn.clicked.connect(self.accept)
+        parent.set_button_style(close_btn)
+        layout.addWidget(close_btn, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        self.apply_theme(parent.theme_switch.isChecked())
+        
+    def apply_theme(self, is_dark):
+        bg_color = "#232629" if is_dark else "#fafafa"
+        text_color = "#ffffff" if is_dark else "#222222"
+        desc_color = "#a1a1aa" if is_dark else "#555555"
+        
+        self.setStyleSheet(f"QDialog {{ background-color: {bg_color}; }}")
+        for t in self.titles:
+            t.setStyleSheet(f"font-size: 14px; font-weight: bold; color: {text_color}; background: transparent;")
+        for d in self.descs:
+            d.setStyleSheet(f"color: {desc_color}; line-height: 1.5; font-size: 12px; background: transparent;")
+
 class YouTubeDownloaderApp(QMainWindow):
     download_row_requested = pyqtSignal(object, str, str, str, str, str, str, str, object)
     # args: thumb_pixmap, title, fmt, res_or_bitrate, time_started, url, folder, format_text, info
@@ -462,9 +550,12 @@ class YouTubeDownloaderApp(QMainWindow):
 
             # Add Help menu
             help_menu = menubar.addMenu("Help")
+            guides_action = QAction("Guides", self)
+            guides_action.triggered.connect(self.show_guides_dialog)
             about_action = QAction("About", self)
             about_action.triggered.connect(self.show_about_dialog)
             if help_menu is not None:
+                help_menu.addAction(guides_action)
                 help_menu.addAction(about_action)
 
         central_widget = QWidget()
@@ -891,6 +982,10 @@ class YouTubeDownloaderApp(QMainWindow):
 
     def show_about_dialog(self):
         QMessageBox.information(self, "About YTV Downloader", "YTV Downloader \nA work in progress modern YouTube video downloader built for easy use and an array of features.")
+
+    def show_guides_dialog(self):
+        dialog = GuidesDialog(self)
+        dialog.exec()
 
     def show_settings_dialog(self):
         dialog = SettingsDialog(self)
